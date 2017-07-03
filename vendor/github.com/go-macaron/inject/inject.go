@@ -72,6 +72,7 @@ type FastInvoker interface {
 	Invoke([]interface{}) ([]reflect.Value, error)
 }
 
+// 类型断言，判断是不是实现了 FastInvoker 接口
 // IsFastInvoker check interface is FastInvoker
 func IsFastInvoker(h interface{}) bool {
 	_, ok := h.(FastInvoker)

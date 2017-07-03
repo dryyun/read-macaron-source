@@ -53,14 +53,17 @@ func (invoke handlerFuncInvoker) Invoke(params []interface{}) ([]reflect.Value, 
 	return nil, nil
 }
 
+// internalServerErrorInvoker 是对 func(rw http.ResponseWriter, err error) 的快速注入包装
 // internalServerErrorInvoker is an inject.FastInvoker wrapper of func(rw http.ResponseWriter, err error).
 type internalServerErrorInvoker func(rw http.ResponseWriter, err error)
 
 func (invoke internalServerErrorInvoker) Invoke(params []interface{}) ([]reflect.Value, error) {
+	// params[0].(http.ResponseWriter 用法是 [类型断言]，成功会返回相应的类型
 	invoke(params[0].(http.ResponseWriter), params[1].(error))
 	return nil, nil
 }
 
+// 对单个 Handler 进行 验证 和 包装
 // validateAndWrapHandler makes sure a handler is a callable function, it panics if not.
 // When the handler is also potential to be any built-in inject.FastInvoker,
 // it wraps the handler automatically to have some performance gain.
@@ -69,7 +72,7 @@ func validateAndWrapHandler(h Handler) Handler {
 		panic("Macaron handler must be a callable function")
 	}
 
-	if !inject.IsFastInvoker(h) {
+	if !inject.IsFastInvoker(h) { // 下面 4 个 case 都实现了 FastInvoker 接口
 		switch v := h.(type) {
 		case func(*Context):
 			return ContextInvoker(v)
@@ -84,6 +87,7 @@ func validateAndWrapHandler(h Handler) Handler {
 	return h
 }
 
+// 验证 和 包装 Handler 切片
 // validateAndWrapHandlers preforms validation and wrapping for each input handler.
 // It accepts an optional wrapper function to perform custom wrapping on handlers.
 func validateAndWrapHandlers(handlers []Handler, wrappers ...func(Handler) Handler) []Handler {
@@ -96,7 +100,7 @@ func validateAndWrapHandlers(handlers []Handler, wrappers ...func(Handler) Handl
 	for i, h := range handlers {
 		h = validateAndWrapHandler(h)
 		if wrapper != nil && !inject.IsFastInvoker(h) {
-			h = wrapper(h)
+			h = wrapper(h) //  类型转换，转成 wrapper 所具体指代的类型
 		}
 		wrappedHandlers[i] = h
 	}
@@ -139,12 +143,14 @@ func NewWithLogger(out io.Writer) *Macaron {
 	return m
 }
 
+// 创建一个全新的 Macaron 实例
 // New creates a bare bones Macaron instance.
 // Use this method if you want to have full control over the middleware that is used.
 func New() *Macaron {
 	return NewWithLogger(os.Stdout)
 }
 
+// 创建一个 经典的 Macaron 有几个基础的中间件
 // Classic creates a classic Macaron with some basic default middleware:
 // macaron.Logger, macaron.Recovery and macaron.Static.
 func Classic() *Macaron {
@@ -180,6 +186,8 @@ func (m *Macaron) Before(handler BeforeHandler) {
 	m.befores = append(m.befores, handler)
 }
 
+// 增加一个中间件
+// 所以 中间件的格式，一般来说就是  validateAndWrapHandler 对应的 4 个 case
 // Use adds a middleware Handler to the stack,
 // and panics if the handler is not a callable func.
 // Middleware Handlers are invoked in the order that they are added.
@@ -222,6 +230,7 @@ func (m *Macaron) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	m.Router.ServeHTTP(rw, req)
 }
 
+// 获取默认 监听 信息，默认是 0.0.0.0:4000
 func GetDefaultListenInfo() (string, int) {
 	host := os.Getenv("HOST")
 	if len(host) == 0 {
@@ -234,6 +243,7 @@ func GetDefaultListenInfo() (string, int) {
 	return host, port
 }
 
+//
 // Run the http server. Listening on os.GetEnv("PORT") or 4000 by default.
 func (m *Macaron) Run(args ...interface{}) {
 	host, port := GetDefaultListenInfo()

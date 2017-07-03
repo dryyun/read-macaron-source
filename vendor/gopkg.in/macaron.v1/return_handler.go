@@ -28,19 +28,26 @@ import (
 // that are passed into this function.
 type ReturnHandler func(*Context, []reflect.Value)
 
+// 判断 Kind 是不是 Interface 或 Ptr
+// func (v Value) Elem() Value ，对应，如果 v 的 Kind 不是 Interface 或 Ptr 会 panic；如果v持有的值为nil，会返回Value零值。
+// 只有能满足  canDeref 的情况下，才能调用 v.Elem()
+// 至于方法名是什么意思呢 ？
 func canDeref(val reflect.Value) bool {
 	return val.Kind() == reflect.Interface || val.Kind() == reflect.Ptr
 }
 
+// 类型断言 判断是不是实现了 error 接口
 func isError(val reflect.Value) bool {
 	_, ok := val.Interface().(error)
 	return ok
 }
 
+// 判断是不是  []uint8{} 格式的
 func isByteSlice(val reflect.Value) bool {
 	return val.Kind() == reflect.Slice && val.Type().Elem().Kind() == reflect.Uint8
 }
 
+// 默认的返回处理器
 func defaultReturnHandler() ReturnHandler {
 	return func(ctx *Context, vals []reflect.Value) {
 		rv := ctx.GetVal(inject.InterfaceOf((*http.ResponseWriter)(nil)))

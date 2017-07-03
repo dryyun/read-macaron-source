@@ -30,7 +30,7 @@ var (
 )
 
 func init() {
-	ColorLog = runtime.GOOS != "windows"
+	ColorLog = runtime.GOOS != "windows"  // 好像只有 win 10 ，才开始支持 console color
 }
 
 // LoggerInvoker is an inject.FastInvoker wrapper of func(ctx *Context, log *log.Logger).
@@ -48,12 +48,12 @@ func Logger() Handler {
 
 		log.Printf("%s: Started %s %s for %s", time.Now().Format(LogTimeFormat), ctx.Req.Method, ctx.Req.RequestURI, ctx.RemoteAddr())
 
-		rw := ctx.Resp.(ResponseWriter)
+		rw := ctx.Resp.(ResponseWriter) // 这步应该是 类型断言，但是感觉没必要 ctx.Resp 的类型其实就是 macaron.ResponseWriter 类型
 		ctx.Next()
 
 		content := fmt.Sprintf("%s: Completed %s %v %s in %v", time.Now().Format(LogTimeFormat), ctx.Req.RequestURI, rw.Status(), http.StatusText(rw.Status()), time.Since(start))
 		if ColorLog {
-			switch rw.Status() {
+			switch rw.Status() { // Go如何输出ANSI 颜色代码，[https://my.oschina.net/jinheking/blog/734947]
 			case 200, 201, 202:
 				content = fmt.Sprintf("\033[1;32m%s\033[0m", content)
 			case 301, 302:

@@ -80,8 +80,8 @@ type Router struct {
 	namedRoutes map[string]*Leaf
 
 	groups              []group
-	notFound            http.HandlerFunc
-	internalServerError func(*Context, error)
+	notFound            http.HandlerFunc      // 路由 notFount ，处理器
+	internalServerError func(*Context, error) // 内部服务错误 ，处理器
 
 	// handlerWrapper is used to wrap arbitrary function from Handler to inject.FastInvoker.
 	handlerWrapper func(Handler) Handler
@@ -95,6 +95,7 @@ func NewRouter() *Router {
 	}
 }
 
+// 设置在注册 Get 路由时，是否也注册 Head 路由 ，对 Combo 路由无效
 // SetAutoHead sets the value who determines whether add HEAD method automatically
 // when GET method is added. Combo router will not be affected by this value.
 func (r *Router) SetAutoHead(v bool) {
@@ -194,45 +195,53 @@ func (r *Router) Group(pattern string, fn func(), h ...Handler) {
 	r.groups = r.groups[:len(r.groups)-1]
 }
 
+// 设置 Get 路由
 // Get is a shortcut for r.Handle("GET", pattern, handlers)
 func (r *Router) Get(pattern string, h ...Handler) (leaf *Route) {
 	leaf = r.Handle("GET", pattern, h)
-	if r.autoHead {
+	if r.autoHead { // 如果 autoHead = true，设置 Get 的时候，会默认注册一个 Head 路由
 		r.Head(pattern, h...)
 	}
 	return leaf
 }
 
+// 设置 Patch 路由
 // Patch is a shortcut for r.Handle("PATCH", pattern, handlers)
 func (r *Router) Patch(pattern string, h ...Handler) *Route {
 	return r.Handle("PATCH", pattern, h)
 }
 
+// 设置 Post 路由
 // Post is a shortcut for r.Handle("POST", pattern, handlers)
 func (r *Router) Post(pattern string, h ...Handler) *Route {
 	return r.Handle("POST", pattern, h)
 }
 
+// 设置 Put 路由
 // Put is a shortcut for r.Handle("PUT", pattern, handlers)
 func (r *Router) Put(pattern string, h ...Handler) *Route {
 	return r.Handle("PUT", pattern, h)
 }
 
+// 设置 Delete 路由
 // Delete is a shortcut for r.Handle("DELETE", pattern, handlers)
 func (r *Router) Delete(pattern string, h ...Handler) *Route {
 	return r.Handle("DELETE", pattern, h)
 }
 
+// 设置 Options 路由
 // Options is a shortcut for r.Handle("OPTIONS", pattern, handlers)
 func (r *Router) Options(pattern string, h ...Handler) *Route {
 	return r.Handle("OPTIONS", pattern, h)
 }
 
+// 设置 Head 路由
 // Head is a shortcut for r.Handle("HEAD", pattern, handlers)
 func (r *Router) Head(pattern string, h ...Handler) *Route {
 	return r.Handle("HEAD", pattern, h)
 }
 
+// 设置 Any 路由
 // Any is a shortcut for r.Handle("*", pattern, handlers)
 func (r *Router) Any(pattern string, h ...Handler) *Route {
 	return r.Handle("*", pattern, h)
@@ -268,6 +277,7 @@ func (r *Router) NotFound(handlers ...Handler) {
 	}
 }
 
+// 内部服务错误
 // InternalServerError configurates handler which is called when route handler returns
 // error. If it is not set, default handler is used.
 // Be sure to set 500 response code in your handler.
